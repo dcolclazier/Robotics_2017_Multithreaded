@@ -13,6 +13,8 @@ namespace Robotics_2017 {
     //debug packets instead of usb debug
     
     public static class Program {
+        public const int clockSpeed = 100;
+
         static OutputPort RedLED = new OutputPort(Pins.GPIO_PIN_D4, true);
         static OutputPort YellowLED = new OutputPort(Pins.GPIO_PIN_D5, true);
         static OutputPort GreenLED = new OutputPort(Pins.GPIO_PIN_D6, true);
