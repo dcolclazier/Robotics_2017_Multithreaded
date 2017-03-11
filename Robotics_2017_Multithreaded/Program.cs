@@ -12,13 +12,9 @@ namespace Robotics_2017 {
     
     //debug packets instead of usb debug
     
-    public static class Program {
+    public static class Program
+    {
         public const int clockSpeed = 100;
-
-        static OutputPort RedLED = new OutputPort(Pins.GPIO_PIN_D4, true);
-        static OutputPort YellowLED = new OutputPort(Pins.GPIO_PIN_D5, true);
-        static OutputPort GreenLED = new OutputPort(Pins.GPIO_PIN_D6, true);
-        static OutputPort BlueLED = new OutputPort(Pins.GPIO_PIN_D7, true);
 
         public static void Main() {
             //Post methods
@@ -38,15 +34,15 @@ namespace Robotics_2017 {
             Debug.Print("Starting memory monitor...");
             MemoryMonitor.Instance.Start();
             
-            var _motors = new MotorController();
+            var motors = new MotorController();
 
-            var testPing = new PingUpdater(Pins.GPIO_PIN_A0);
-            testPing.Start();
+            //var testPing = new PingUpdater(Pins.GPIO_PIN_A0);
+            //testPing.Start();
 
-            var testIR = new IRDistanceUpdater(AnalogChannels.ANALOG_PIN_A1,25,100);
-            testIR.Start();
+            //var testIR = new IRDistanceUpdater(AnalogChannels.ANALOG_PIN_A1,25,100);
+            //testIR.Start();
 
-            
+
 
             // Start sensor actions here.
             Debug.Print("Flight computer boot successful.");
@@ -54,45 +50,57 @@ namespace Robotics_2017 {
 
             while (true)
             {
-                Debug.Print("IR: " + RobotState.IRDistance);
-                Debug.Print("\nPing: " + RobotState.PingDistance);
-                Thread.Sleep(1000);
-                var oldSenV = RobotState.LastIRDistance;
-                var currentSenV = RobotState.IRDistance;
+                //Debug.Print("IR: " + RobotState.IRDistance);
+                //Debug.Print("\nPing: " + RobotState.PingDistance);
+                //Thread.Sleep(1000);
+                //var oldSenV = RobotState.LastIRDistance;
+                //var currentSenV = RobotState.IRDistance;
 
-                GreenLED.Write(RobotState.CheckReady());
+                //GreenLED.Write(RobotState.CheckReady());
 
-                BlueLED.Write(currentSenV >= 1000);
-                YellowLED.Write(currentSenV >= 2000);
-                if (currentSenV >= 1000) BlueLED.Write(true);
-
-                if (Math.Abs(oldSenV - currentSenV) > .01)
+                //BlueLED.Write(currentSenV >= 1000);
+                //YellowLED.Write(currentSenV >= 2000);
+                //if (currentSenV >= 1000) BlueLED.Write(true);
+                while (true)
                 {
-                    Debug.Print("SensorValue: " + currentSenV);
-
-                    RedLED.Write(false);
-                    YellowLED.Write(false);
-                    BlueLED.Write(false);
-
-                    if (currentSenV >= 1000) BlueLED.Write(true);
-                    if (currentSenV >= 2000) YellowLED.Write(true);
-                    if (!(currentSenV >= 3000)) continue;
-
-                    RedLED.Write(true);
-                    _motors.Halt();
-
-                    _motors.Backward(255);
-                    Thread.Sleep(100);
-
-                    if (currentSenV >= 2000)
-                    {
-                        //do nothing
-                        Debug.Print("Too close...");
-                        _motors.Halt();
-                        _motors.Right(255);
-
-                    }
+                    motors.Forward(255);
+                    Thread.Sleep(2000);
+                    motors.Backward(255);
+                    Thread.Sleep(2000);
+                    motors.Right(255);
+                    Thread.Sleep(2000);
+                    motors.Left(255);
+                    Thread.Sleep(2000);
+                    Debug.Print("I'm in the loop! ");
                 }
+
+                //if (Math.Abs(oldSenV - currentSenV) > .01)
+                //{
+                //    Debug.Print("SensorValue: " + currentSenV);
+
+                //    RedLED.Write(false);
+                //    YellowLED.Write(false);
+                //    BlueLED.Write(false);
+
+                //    if (currentSenV >= 1000) BlueLED.Write(true);
+                //    if (currentSenV >= 2000) YellowLED.Write(true);
+                //    if (!(currentSenV >= 3000)) continue;
+
+                //    RedLED.Write(true);
+                //    _motors.Halt();
+
+                //    _motors.Backward(255);
+                //    Thread.Sleep(100);
+
+                //    if (currentSenV >= 2000)
+                //    {
+                //        //do nothing
+                //        Debug.Print("Too close...");
+                //        _motors.Halt();
+                //        _motors.Right(255);
+
+                //    }
+                //}
             }
         }
         

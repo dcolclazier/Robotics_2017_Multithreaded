@@ -5,18 +5,23 @@ namespace Robotics_2017.Work_Items {
     public class MotorController {
         private const double Frequency = 490;
 
-        private readonly OutputPort _leftDir = new OutputPort(Pins.GPIO_PIN_D12, false);
-        private readonly PWM _leftPWM = new PWM(PWMChannels.PWM_PIN_D3, Frequency, 1, false);
-        private readonly OutputPort _rightDir = new OutputPort(Pins.GPIO_PIN_D13, false);
-        private readonly PWM _rightPWM = new PWM(PWMChannels.PWM_PIN_D11, Frequency, 1, false);
+        private readonly OutputPort _leftCW = new OutputPort(Pins.GPIO_PIN_D7, false);
+        private readonly OutputPort _leftCCW = new OutputPort(Pins.GPIO_PIN_D8, false);
+        private readonly PWM _leftPWM = new PWM(PWMChannels.PWM_PIN_D5, Frequency, 1, false);
+        private readonly OutputPort _rightCW = new OutputPort(Pins.GPIO_PIN_D4, false);
+        private readonly OutputPort _rightCCW = new OutputPort(Pins.GPIO_PIN_D9, false);
+        private readonly PWM _rightPWM = new PWM(PWMChannels.PWM_PIN_D6, Frequency, 1, false);
+        
         public void Forward(int s)
         {
-            if (RobotState.CheckReady() && (s <= 255))// || (s > 0))
+            //if (RobotState.CheckReady() && (s <= 255))// || (s > 0))
+            if(true)
             {
+                _leftCCW.Write(true);
+                _leftCW.Write(false);
 
-
-                _leftDir.Write(true);
-                _rightDir.Write(true);
+                _rightCCW.Write(false);
+                _rightCW.Write(true);
 
                 _leftPWM.DutyCycle = (s / 255);
                 _rightPWM.DutyCycle = (s / 255);
@@ -33,9 +38,12 @@ namespace Robotics_2017.Work_Items {
             {
                 Halt();
 
-                _leftDir.Write(false);
-                _rightDir.Write(false);
-                
+                _leftCCW.Write(false);
+                _leftCW.Write(true);
+
+                _rightCCW.Write(true);
+                _rightCW.Write(false);
+
                 _leftPWM.DutyCycle = (s / 255);
                 _rightPWM.DutyCycle = (s / 255);
                 
@@ -47,11 +55,15 @@ namespace Robotics_2017.Work_Items {
 
         public void Right(int s)
         {
-            if (RobotState.CheckReady())
+            //if (RobotState.CheckReady())
+            if(true)
             {
-                _leftDir.Write(true);
-                _rightDir.Write(false);
-                
+                _leftCCW.Write(true);
+                _leftCW.Write(false);
+
+                _rightCCW.Write(true);
+                _rightCW.Write(false);
+
                 _leftPWM.DutyCycle = (s / 255);
                 _rightPWM.DutyCycle = (s / 255);
                 
@@ -60,8 +72,33 @@ namespace Robotics_2017.Work_Items {
             }
             else Halt();
         }
+
+        public void Left(int s)
+        {
+            //if (RobotState.CheckReady())
+            if (true)
+            {
+                _leftCCW.Write(false);
+                _leftCW.Write(true);
+
+                _rightCCW.Write(true);
+                _rightCW.Write(false);
+
+                _leftPWM.DutyCycle = (s / 255);
+                _rightPWM.DutyCycle = (s / 255);
+
+                _leftPWM.Start();
+                _rightPWM.Start();
+            }
+            else Halt();
+        }
         public void Halt()
         {
+            _leftCCW.Write(false);
+            _leftCW.Write(false);
+
+            _rightCCW.Write(false);
+            _rightCW.Write(false);
             _leftPWM.Stop();
             _rightPWM.Stop();
         }
