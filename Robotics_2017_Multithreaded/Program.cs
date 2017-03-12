@@ -34,7 +34,7 @@ namespace Robotics_2017 {
             Debug.Print("Starting memory monitor...");
             MemoryMonitor.Instance.Start();
             
-            var motors = new MotorController();
+            var motors = new MotorDriver();
 
             //var testPing = new PingUpdater(Pins.GPIO_PIN_A0);
             //testPing.Start();

@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <AssemblyName>RockSatC-2016</AssemblyName>
+    <AssemblyName>Robotics_2017</AssemblyName>
     <OutputType>Exe</OutputType>
-    <RootNamespace>RockSatC_2016</RootNamespace>
+    <RootNamespace>Robotics_2017</RootNamespace>
     <ProjectTypeGuids>{b69e3092-b931-443c-abe7-7e7b65f2a37f};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
@@ -38,6 +38,7 @@
     <Compile Include="Drivers\ParallaxPingSimple.cs" />
     <Compile Include="Drivers\PingEventArgs.cs" />
     <Compile Include="Drivers\Receiver.cs" />
+    <Compile Include="Drivers\MotorDriver.cs" />
     <Compile Include="Utility\CompassUpdater.cs" />
     <Compile Include="Utility\ExMath.cs" />
     <Compile Include="Utility\ReceiverUpdater.cs" />
