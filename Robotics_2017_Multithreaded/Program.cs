@@ -3,6 +3,7 @@ using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
 using Robotics_2017.Drivers;
 using Robotics_2017.Flight_Computer;
+using Robotics_2017.Utility;
 using Robotics_2017.Work_Items;
 using SecretLabs.NETMF.Hardware.Netduino;
 using Math = System.Math;
@@ -14,9 +15,11 @@ namespace Robotics_2017 {
     
     public static class Program
     {
+        
         public const int clockSpeed = 100;
 
         public static void Main() {
+            I2CBus bus = new I2CBus();
             //Post methods
             //THIS SECTION CREATES / INITIALIZES THE SERIAL LOGGER
             Debug.Print("Flight computer posted successfully. Beginning INIT.");
@@ -36,6 +39,12 @@ namespace Robotics_2017 {
             
             var motors = new MotorDriver();
 
+            var testCompass = new CompassUpdater(bus);
+            testCompass.Start();
+
+            var testBeacon = new ReceiverUpdater(bus);
+            testBeacon.Start();
+
             //var testPing = new PingUpdater(Pins.GPIO_PIN_A0);
             //testPing.Start();
 
@@ -50,6 +59,9 @@ namespace Robotics_2017 {
 
             while (true)
             {
+                Debug.Print("Degrees: "+ RobotState.CompassHeading);
+                Thread.Sleep(500);
+
                 //Debug.Print("IR: " + RobotState.IRDistance);
                 //Debug.Print("\nPing: " + RobotState.PingDistance);
                 //Thread.Sleep(1000);
@@ -61,18 +73,16 @@ namespace Robotics_2017 {
                 //BlueLED.Write(currentSenV >= 1000);
                 //YellowLED.Write(currentSenV >= 2000);
                 //if (currentSenV >= 1000) BlueLED.Write(true);
-                while (true)
-                {
-                    motors.Forward(255);
-                    Thread.Sleep(2000);
-                    motors.Backward(255);
-                    Thread.Sleep(2000);
-                    motors.Right(255);
-                    Thread.Sleep(2000);
-                    motors.Left(255);
-                    Thread.Sleep(2000);
-                    Debug.Print("I'm in the loop! ");
-                }
+
+                //motors.Forward(255);
+                //Thread.Sleep(2000);
+                //motors.Backward(255);
+                //Thread.Sleep(2000);
+                //motors.Right(255);
+                //Thread.Sleep(2000);
+                //motors.Left(255);
+                //Thread.Sleep(2000);
+                //Debug.Print("I'm in the loop! ");
 
                 //if (Math.Abs(oldSenV - currentSenV) > .01)
                 //{

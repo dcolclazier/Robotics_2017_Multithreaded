@@ -39,9 +39,9 @@
     <Compile Include="Drivers\PingEventArgs.cs" />
     <Compile Include="Drivers\Receiver.cs" />
     <Compile Include="Drivers\MotorDriver.cs" />
-    <Compile Include="Utility\CompassUpdater.cs" />
+    <Compile Include="Work Items\CompassUpdater.cs" />
     <Compile Include="Utility\ExMath.cs" />
-    <Compile Include="Utility\ReceiverUpdater.cs" />
+    <Compile Include="Work Items\ReceiverUpdater.cs" />
     <Compile Include="Utility\Tools.cs" />
     <Compile Include="Flight Computer\Clock.cs" />
     <Compile Include="Work Items\IRDistanceUpdater.cs" />

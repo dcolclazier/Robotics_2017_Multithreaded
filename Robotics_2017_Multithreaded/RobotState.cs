@@ -11,12 +11,12 @@ namespace Robotics_2017.Work_Items {
         public static double LastIRDistance { get; private set; }
         public static double LastcompassHeading { get; private set; }
         public static double CompassHeading { get; private set; }
-        public static double LastRawCompassHeading { get; set; }
-        public static double RawCompassHeading { get; set; }
-        public static int Bearing { get; set; }
-        public static int LastBearing { get; set; }
-        public static bool BeaconPresent { get; set; }
-        public static bool LastBeaconPresent { get; set; }
+        public static double LastRawCompassHeading { get; private set; }
+        public static double RawCompassHeading { get; private set; }
+        public static int Bearing { get; private set; }
+        public static int LastBearing { get; private set; }
+        public static bool BeaconPresent { get; private set; }
+        public static bool LastBeaconPresent { get; private set; }
 
         private static readonly AnalogInput robotActivePin = new AnalogInput(AnalogChannels.ANALOG_PIN_A0 );
 
@@ -69,6 +69,7 @@ namespace Robotics_2017.Work_Items {
             LastBeaconPresent = BeaconPresent;
             BeaconPresent = health;
         }
+
         public static bool CheckReady() {
             return robotActivePin.Read() >= 0.9;
         }

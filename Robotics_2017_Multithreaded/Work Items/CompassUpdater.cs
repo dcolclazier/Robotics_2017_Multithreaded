@@ -1,8 +1,8 @@
 using System.Threading;
-using Microsoft.SPOT.Hardware;
-using Test_Bot_Multithread.Drivers;
+using Robotics_2017.Drivers;
+using Robotics_2017.Work_Items;
 
-namespace Test_Bot_Multithread.Work_Items {
+namespace Robotics_2017.Utility {
     public class CompassUpdater {
         private readonly Hmc5883L _compass;
 
@@ -10,8 +10,9 @@ namespace Test_Bot_Multithread.Work_Items {
         private readonly int _delay;
 
         //Maximum refresh rate from the HMC3883L is 14ms in continuous measurement mode
-        public CompassUpdater(int delay = 50) {
-            _compass = new Hmc5883L(1000);
+        public CompassUpdater(I2CBus bus,int delay = 100)
+        {
+            _compass = new Hmc5883L(bus);
             _workItem = new WorkItem(CompassUpdate, false, true, true);
             _delay = delay;
         }
@@ -19,7 +20,7 @@ namespace Test_Bot_Multithread.Work_Items {
         private void CompassUpdate() {
             //RobotState.SetRawHeading(_compass.readRaw());
             //RobotState.SetHeading(_compass.ReadHeading());
-            RobotState.SetHeading(_compass.GetHeading());
+            RobotState.SetHeading(_compass.GetHeadingDegrees());
             Thread.Sleep(_delay);
         }
 

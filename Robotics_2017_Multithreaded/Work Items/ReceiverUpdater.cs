@@ -1,9 +1,7 @@
 using System.Threading;
-using Microsoft.SPOT.Hardware;
-using test_bot_netduino;
-using Test_Bot_Multithread.Drivers;
+using Robotics_2017.Drivers;
 
-namespace Test_Bot_Multithread.Work_Items
+namespace Robotics_2017.Work_Items
 {
     public class ReceiverUpdater
     {
@@ -15,9 +13,9 @@ namespace Test_Bot_Multithread.Work_Items
         private readonly int _delay;
 
         //Maximum refresh rate from the HMC3883L is 14ms in continuous measurement mode
-        public ReceiverUpdater(int delay = 1000)
+        public ReceiverUpdater(I2CBus bus, int delay = 1000)
         {
-            _receiver = new Receiver();
+            _receiver = new Receiver(bus);
             _workItem = new WorkItem(ReceiverUpdate, false, true, true);
             //_workItem2 = new WorkItem(Health, false, true, true);
 

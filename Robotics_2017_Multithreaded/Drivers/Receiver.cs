@@ -14,13 +14,22 @@ namespace Robotics_2017.Drivers
         private static I2CDevice.Configuration _slaveConfig;
         private const int TransactionTimeout = 1000;
         public const byte BeaconAddress = 0x08;
-        public static int clockSpeed = Program.clockSpeed;
+        private I2CBus _bus;
+        public static int ClockRate = Program.clockSpeed;
+
+
+        public Receiver(I2CBus bus)
+        {
+            _bus = bus;
+            _slaveConfig = new I2CDevice.Configuration(BeaconAddress, ClockRate);
+        }
         
        
         public bool BeaconPresent()
         {
             var bytes = new byte[2];
-            I2CBus.GetInstance().ReadRegister(_slaveConfig, BeaconAddress, bytes, TransactionTimeout);
+            //I2CBus.GetInstance().ReadRegister(_slaveConfig, BeaconAddress, bytes, TransactionTimeout);
+            _bus.ReadRegister(_slaveConfig, BeaconAddress, bytes, TransactionTimeout);
 
             var MSB = bytes[0];
             var LSB = bytes[1];
@@ -40,7 +49,8 @@ namespace Robotics_2017.Drivers
         public int FindBeacon()
         {
             var data = new byte[2];
-            I2CBus.GetInstance().ReadRegister(_slaveConfig, BeaconAddress, data, TransactionTimeout);
+            //I2CBus.GetInstance().ReadRegister(_slaveConfig, BeaconAddress, data, TransactionTimeout);
+            _bus.ReadRegister(_slaveConfig, BeaconAddress, data, TransactionTimeout);
             var MSB = data[0];
             var LSB = data[1];
             int  location = (MSB << 8 | LSB);
@@ -48,10 +58,12 @@ namespace Robotics_2017.Drivers
             return location;
         }
         
+        //Used for debugging Not needed.
         public void Location()
         {
             var data = new byte[2];
-            I2CBus.GetInstance().ReadRegister(_slaveConfig, BeaconAddress, data, TransactionTimeout);
+            //I2CBus.GetInstance().ReadRegister(_slaveConfig, BeaconAddress, data, TransactionTimeout);
+            _bus.ReadRegister(_slaveConfig, BeaconAddress, data, TransactionTimeout);
             var msb = Tools.Bcd2Bin(new[] { data[0] });
             var lsb = Tools.Bcd2Bin(new[] { data[1] });
             

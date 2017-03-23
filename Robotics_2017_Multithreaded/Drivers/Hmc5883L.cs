@@ -25,18 +25,20 @@ namespace Robotics_2017.Drivers
         private const byte IDENTIFICATION_REGISTER_C_VALUE = 0x33;
         private const byte CONTINUOUS_MEASUREMENT = 0x00;
 
-        public static int CLOCK_RATE = Program.clockSpeed;
+        private static int CLOCK_RATE = Program.clockSpeed;
 
         private double pitch, roll;
         private double declination; // in milli radians
 
         private I2CDevice.Configuration _slaveConfig;
+        private I2CBus _bus;//bug: Needed?
         private const int TransactionTimeout = 1000;
-
-        public Hmc5883L(double scale = 1.3)
+        
+        public Hmc5883L(I2CBus bus, byte address = 0x1E, double scale = 1.3)
         {
+            _bus = bus;
             _slaveConfig = new I2CDevice.Configuration(HMC5883L_Address, CLOCK_RATE);
-
+            
             SetScale(scale);
 
             SetContinuous();
@@ -104,7 +106,8 @@ namespace Robotics_2017.Drivers
                 var r = new ThreeAxisRawData();
 
                 byte[] bytes = new byte[6];
-                I2CBus.GetInstance().ReadRegister(_slaveConfig, DataValue_StartingRegister, bytes, TransactionTimeout);
+                //I2CBus.GetInstance().ReadRegister(_slaveConfig, DataValue_StartingRegister, bytes, TransactionTimeout);
+                _bus.ReadRegister(_slaveConfig, DataValue_StartingRegister, bytes, TransactionTimeout);
 
                 short xReading = (short) ((bytes[0] << 8) | bytes[1]);
                 short zReading = (short) ((bytes[2] << 8) | bytes[3]);
@@ -200,8 +203,9 @@ namespace Robotics_2017.Drivers
         public void SetContinuous()
         {
             //Todo fix holder below
-            byte[] holder = new[] {CONTINUOUS_MEASUREMENT};
-            I2CBus.GetInstance().ReadRegister(_slaveConfig, MeasurementRateRegister, holder, TransactionTimeout);
+            //byte[] holder = new[] {CONTINUOUS_MEASUREMENT};
+            //I2CBus.GetInstance().ReadRegister(_slaveConfig, MeasurementRateRegister, holder, TransactionTimeout);
+            _bus.Write(_slaveConfig,new []{(byte)MeasurementRateRegister, (byte) CONTINUOUS_MEASUREMENT}, TransactionTimeout);
         }
         
         public void SetScale(double gauss)
@@ -256,7 +260,8 @@ namespace Robotics_2017.Drivers
             regValue = (byte) (((int) regValue) << 5);
 
             byte[] reg = new[] {ScaleRegister};
-            I2CBus.GetInstance().Write(_slaveConfig, reg, regValue);
+            //I2CBus.GetInstance().Write(_slaveConfig, reg, regValue);
+            _bus.Write(_slaveConfig, new []{(byte) ScaleRegister, (byte)regValue}, TransactionTimeout);
         }
     }
 }
