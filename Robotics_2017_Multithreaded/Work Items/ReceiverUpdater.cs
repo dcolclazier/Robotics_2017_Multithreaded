@@ -1,4 +1,5 @@
 using System.Threading;
+using Microsoft.SPOT;
 using Robotics_2017.Drivers;
 
 namespace Robotics_2017.Work_Items
@@ -13,10 +14,11 @@ namespace Robotics_2017.Work_Items
         private readonly int _delay;
 
         //Maximum refresh rate from the HMC3883L is 14ms in continuous measurement mode
-        public ReceiverUpdater(I2CBus bus, int delay = 1000)
+        //public ReceiverUpdater(I2CBus bus, int delay = 500)
+        public ReceiverUpdater(int delay = 500)
         {
-            _receiver = new Receiver(bus);
-            _workItem = new WorkItem(ReceiverUpdate, false, true, true);
+            //_receiver = new Receiver(bus);
+            //_workItem = new WorkItem(ReceiverUpdate, false, true, true);
             //_workItem2 = new WorkItem(Health, false, true, true);
 
             _delay = delay;
@@ -24,7 +26,8 @@ namespace Robotics_2017.Work_Items
 
         private void ReceiverUpdate()
         {
-            RobotState.SetBearing(_receiver.FindBeacon());
+            Debug.Print("Requesting data from Ardunio");
+            //RobotState.SetBearing(_receiver.FindBeacon());
             Thread.Sleep(_delay);
         }
 

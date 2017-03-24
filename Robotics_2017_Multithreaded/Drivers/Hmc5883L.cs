@@ -8,262 +8,676 @@ using Math = System.Math;
 
 namespace Robotics_2017.Drivers
 {
-
     public class Hmc5883L
     {
-        private const double declinationAngle = (8 + (12 / 60)) / (180 / Math.PI);
-        private const byte HMC5883L_Address = 0x1E;
-        private const byte ScaleRegister = 0x01;
-        private const byte MeasurementRateRegister = 0x02;
-        private const byte DataValue_StartingRegister = 0x03;
-        private const byte IdentificationRegister_1 = 0x0A;
-        private const byte IdentificationRegister_2 = 0x0B;
-        private const byte IdentificationRegister_3 = 0x0C;
-
-        private const byte IDENTIFICATION_REGISTER_A_VALUE = 0x48;
-        private const byte IDENTIFICATION_REGISTER_B_VALUE = 0x34;
-        private const byte IDENTIFICATION_REGISTER_C_VALUE = 0x33;
-        private const byte CONTINUOUS_MEASUREMENT = 0x00;
-
         private static int CLOCK_RATE = Program.clockSpeed;
 
-        private double pitch, roll;
-        private double declination; // in milli radians
-
         private I2CDevice.Configuration _slaveConfig;
-        private I2CBus _bus;//bug: Needed?
-        private const int TransactionTimeout = 1000;
-        
+        //private I2CDevice.Configuration _slaveWriteConfig;
+        //private I2CDevice.Configuration _slaveReadConfig;
+        private I2CBus _bus;
+        public const int TransactionTimeout = 1000;
+
+        private Data _magData;
+
         public Hmc5883L(I2CBus bus, byte address = 0x1E, double scale = 1.3)
         {
             _bus = bus;
-            _slaveConfig = new I2CDevice.Configuration(HMC5883L_Address, CLOCK_RATE);
-            
-            SetScale(scale);
 
-            SetContinuous();
+            _slaveConfig = new I2CDevice.Configuration((byte)Addresses.WRITE_ADDRESS >> 1, CLOCK_RATE);
+            //_slaveWriteConfig = new I2CDevice.Configuration((byte) Addresses.WRITE_ADDRESS, CLOCK_RATE);
+            //_slaveReadConfig = new I2CDevice.Configuration((byte) Addresses.READ_ADDRESS, CLOCK_RATE);
+
+            //_bus.Write(_slaveConfig, new[] {(byte) Addresses.WRITE_ADDRESS, (byte) Registers.ConfigurationRegisterA, (byte) SamplesAveraged.SamplesAveraged8}, TransactionTimeout);
+
+            //_bus.Write(_slaveConfig, new[] {(byte) 0X3C, (byte)0x00, (byte)0x70 }, TransactionTimeout);
+
+            _bus.WriteRegister(_slaveConfig, 0x00, 0x70, TransactionTimeout);
+
+            //_bus.WriteRegister(_slaveConfig, (byte)Registers.ConfigurationRegisterA, (byte)SamplesAveraged.SamplesAveraged8, TransactionTimeout);
+            //_bus.Write(_slaveConfig, new []{(byte)Addresses.WRITE_ADDRESS, (byte) Registers.ConfigurationRegisterA, (byte) SamplesAveraged.SamplesAveraged8}, TransactionTimeout);
+            //_bus.WriteRegister(_slaveConfig, (byte)Registers.ConfigurationRegisterA, (byte)SamplesAveraged.SamplesAveraged8, TransactionTimeout);
+            //Thread.Sleep(50);
+
+            //_bus.WriteRegister(_slaveConfig, (byte)Addresses.WRITE_ADDRESS, new[] { (byte)Registers.ConfigurationRegisterB, (byte)Gain.Gain1090}, TransactionTimeout);
+            //_bus.Write(_slaveConfig, new[] { (byte)Addresses.WRITE_ADDRESS, (byte)Registers.ConfigurationRegisterB, (byte)Gain.Gain1090 }, TransactionTimeout);
+            //Thread.Sleep(50);
+
+            _bus.Write(_slaveConfig, new []{((byte) (0x1E & 0x3C))}, TransactionTimeout);
+            //_bus.WriteRegister(_slaveConfig, (byte)Addresses.WRITE_ADDRESS, new[] { (byte)Registers.ModeRegister, (byte)OperatingModes.OperatingModeContinuous}, TransactionTimeout);
+            //_bus.Write(_slaveConfig, new byte[] { (byte)Addresses.WRITE_ADDRESS, (byte)Registers.ModeRegister, (byte)OperatingModes.OperatingModeContinuous }, TransactionTimeout);
+            Thread.Sleep(6);
+
+
+
         }
 
-        public struct ThreeAxisRawData
+
+        public short ReadHeading()
         {
-            public int X { get; set; }
-            public int Y { get; set; }
-            public int Z { get; set; }
+            //var readBuffer = new byte[6];
+            //var data = new Data();
+            //I2CBus.GetInstance().ReadRegister(_slaveConfig, 0x03, readBuffer, TransactionTimeout);
+
+            //I2CBus.GetInstance().Read(_slaveConfig, readBuffer, TransactionTimeout);
+            //data.AxisX = (readBuffer[0] << 8) | readBuffer[1];
+            //data.AxisZ = (readBuffer[2] << 8) | readBuffer[3];
+            //data.AxisY = (readBuffer[4] << 8) | readBuffer[5];
+
+            Data data = new Data();
+            var buffer = new byte[6];
+            buffer[0] = 0x03;
+            //I2CBus.GetInstance().Write(_slaveConfig, new byte[] { 0x3D, 0x06 }, TransactionTimeout);
+
+            //I2CBus.GetInstance().Read(new I2CDevice.Configuration(0x1E, 100), buffer, TransactionTimeout);
+            //I2CBus.GetInstance().Write(_slaveConfig, new byte[] {0x3C, 0x03 }, TransactionTimeout);
+            _bus.ReadRegister(_slaveConfig, 0x03, buffer, TransactionTimeout);
+
+            _bus.Write(_slaveConfig, new byte[] { 0x3C, 0x03 }, TransactionTimeout);
+
+            data.AxisX = ((buffer[0] << 8) | buffer[1]);
+            data.AxisZ = ((buffer[2] << 8) | buffer[3]);
+            data.AxisY = ((buffer[4] << 8) | buffer[5]);
+
+            Debug.Print("x: " + data.AxisX + " Y: " + data.AxisY + " Z: " + data.AxisZ);
+            return 1234;
         }
 
-        public struct ThreeAxisScaledData
+
+
+
+
+        #region Definitions
+        /// <summary>
+        /// Defines Pi
+        /// </summary>
+        //TODO: May NOT need to define if can find in system.Math...
+        private const double Pi = 3.14159265358979323846;
+
+        /// <summary>
+        /// Modifier
+        /// </summary>
+        private float _mgPerDigit = 0.92f;
+
+        /// <summary>
+        /// Class for the I²C connection
+        /// </summary>
+        private I2CDevice _i2CDevice;
+
+        /// <summary>
+        /// The variables for storing the results after the measurement.
+        /// </summary>
+        private byte[] i2CData = new byte[6];
+
+
+        /// <summary>
+        /// Struct to hold data
+        /// </summary>
+        public struct Data
         {
-            public double ScaledX { get; set; }
-            public double ScaledY { get; set; }
-            public double ScaledZ { get; set; }
+            /// <summary>
+            /// Gets or sets the X axis.
+            /// </summary>
+            public double AxisX { get; set; }
+
+            /// <summary>
+            /// Gets or sets the Y axis.
+            /// </summary>
+            public double AxisY { get; set; }
+
+            /// <summary>
+            /// Gets or sets the Z axis.
+            /// </summary>
+            public double AxisZ { get; set; }
+
+            /// <summary>
+            /// Gets or sets the x offset.
+            /// </summary>
+            public short xOffset { get; set; }
+
+            /// <summary>
+            /// Gets or sets the y offset.
+            /// </summary>
+            public short yOffset { get; set; }
+
+            /// <summary>
+            /// Gets or sets the y offset.
+            /// </summary>
+            public short zOffset { get; set; }
+
+            /// <summary>
+            /// Gets or sets the y offset.
+            /// </summary>
+            public double xScale { get; set; }
+
+            /// <summary>
+            /// Gets or sets the y offset.
+            /// </summary>
+            public double yScale { get; set; }
+
+            /// <summary>
+            /// Gets or sets the y offset.
+            /// </summary>
+            public double zScale { get; set; }
+
+            public double declinationAngle { get; set; }
         }
-
-        public static double Scale { get; set; }
-
-        // If you have an EAST declination, use positive value, if you have a WEST declination, use negative value
-        public void SetDeclination(double dec_mRads)
-        {
-            declination = dec_mRads / 1000.0;
-        }
-
-        public void SetPitch(double p)
-        {
-            pitch = p;
-        }
-
-        public double GetPitch()
-        {
-            return pitch;
-        }
-
-        public int GetPitchDegrees()
-        {
-            return (int) ExMath.RadiansToDegrees(pitch);
-        }
-
-        public void SetRoll(double r)
-        {
-            roll = r;
-        }
-
-        public double GetRoll()
-        {
-            return roll;
-        }
-
-        public double GetRollDegrees()
-        {
-            return (int) ExMath.RadiansToDegrees(roll);
-        }
-
-
-        #region Three Axis Operations
-
-        public ThreeAxisRawData Raw
-        {
-            get
-            {
-                var r = new ThreeAxisRawData();
-
-                byte[] bytes = new byte[6];
-                //I2CBus.GetInstance().ReadRegister(_slaveConfig, DataValue_StartingRegister, bytes, TransactionTimeout);
-                _bus.ReadRegister(_slaveConfig, DataValue_StartingRegister, bytes, TransactionTimeout);
-
-                short xReading = (short) ((bytes[0] << 8) | bytes[1]);
-                short zReading = (short) ((bytes[2] << 8) | bytes[3]);
-                short yReading = (short) ((bytes[4] << 8) | bytes[5]);
-
-                r.X = xReading;
-                r.Y = yReading;
-                r.Z = zReading;
-
-                return r;
-            }
-        }
-
-        public ThreeAxisScaledData ScaledData
-        {
-            get
-            {
-                ThreeAxisRawData rd = Raw; // We will read data only once
-                var s = new ThreeAxisScaledData();
-
-                s.ScaledX = Scale * rd.X;
-                s.ScaledY = Scale * rd.Y;
-                s.ScaledZ = Scale * rd.Z;
-
-                return s;
-            }
-        }
-
         #endregion
 
-        public double GetHeadingRaw()
+        #region StuffAndThings
+        private enum Addresses : byte
         {
-            ThreeAxisScaledData sd = this.ScaledData; // this ensures we are reading data only once from the bus
 
-            return ExMath.Atan(sd.ScaledY / sd.ScaledX);
+            /// <summary>
+            /// 7-bit I2C physical address of the HMC5883L
+            /// </summary>
+            ADDRESS =  0x1E,
+
+            /// <summary>
+            /// 7-bit I2C read address of the HMC5883L
+            /// </summary>
+            READ_ADDRESS = 0x3D,
+
+            /// <summary>
+            /// 7-bit I2C write address of the HMC5883L
+            /// </summary>
+            WRITE_ADDRESS = 0x3C
         }
 
-        public double GetHeadingRawDegrees()
+        private enum Registers : byte
         {
-            return ExMath.RadiansToDegrees(this.GetHeadingRaw());
+            /// <summary>
+            /// Configuration Register A (Read/Write)
+            /// </summary>
+            ConfigurationRegisterA = 0x00,
+
+            /// <summary>
+            /// Configuration Register B (Read/Write)
+            /// </summary>
+            ConfigurationRegisterB = 0x01,
+
+            /// <summary>
+            /// Mode Register (Read/Write)
+            /// </summary>
+            ModeRegister = 0x02,
+
+            /// <summary>
+            /// Data Output X MSB Register (Read only)
+            /// </summary>
+            DataOutputXMsbRegister = 0x03,
+
+            /// <summary>
+            /// Data Output X LSB Register (Read only)
+            /// </summary>
+            DataOutputXLsbRegister = 0x04,
+
+            /// <summary>
+            /// Data Output Z MSB Register (Read only)
+            /// </summary>
+            DataOutputZMsbRegister = 0x05,
+
+            /// <summary>
+            /// Data Output Z LSB Register (Read only)
+            /// </summary>
+            DataOutputZLsbRegister = 0x06,
+
+            /// <summary>
+            /// Data Output Y MSB Register (Read only)
+            /// </summary>
+            DataOutputYMsbRegister = 0x07,
+
+            /// <summary>
+            /// Data Output Y LSB Register (Read only)
+            /// </summary>
+            DataOutputYLsbRegister = 0x08,
+
+            /// <summary>
+            /// Status Register (Read only)
+            /// </summary>
+            StatusRegister = 0x09,
+
+            /// <summary>
+            /// Identification Register A (Read only)
+            /// </summary>
+            IdentificationRegisterA = 0x10,
+
+            /// <summary>
+            /// Identification Register B (Read only)
+            /// </summary>
+            IdentificationRegisterB = 0x11,
+
+            /// <summary>
+            /// Identification Register C (Read only)
+            /// </summary>
+            IdentificationRegisterC = 0x12
         }
 
-        public double GetHeadingDegrees()
+        private enum SamplesAveraged : byte
         {
-            return ExMath.RadiansToDegrees(this.GetHeading());
+
+            /// <summary>
+            /// 1 sample averaged per measurement output
+            /// </summary>
+            SamplesAveraged1 = 0x00,
+
+            /// <summary>
+            /// 2 samples averaged per measurement output
+            /// </summary>
+            SamplesAveraged2 = 0x20,
+
+            /// <summary>
+            /// 4 samples averaged per measurement output
+            /// </summary>
+            SamplesAveraged4 = 0x40,
+
+            /// <summary>
+            /// 8 samples averaged per measurement output
+            /// </summary>
+            SamplesAveraged8 = 0x70
         }
 
-        public double GetHeading()
+        private enum OutputRates : byte
         {
-            ThreeAxisScaledData sd;
-            double Xm, Ym, Zm;
-            double Xh, Yh;
-            double cp, sp, cr, sr; // Cos and Sin of Pitch and Roll
-            double result;
+            /// <summary>
+            /// 0.75 Hz Output Rate
+            /// </summary>
+            OUTPUT_RATE_0_75 = 0x00,
 
-            sd = this.ScaledData; // this ensures we are only reading once from the bus
-            Xm = sd.ScaledX; // swapping X=Y due to installment 
-            Ym = sd.ScaledY;
-            Zm = sd.ScaledZ;
+            /// <summary>
+            /// 1.5 Hz Output Rate
+            /// </summary>
+            OUTPUT_RATE_1_5 = 0x04,
 
-            cp = ExMath.Cos(pitch);
-            sp = ExMath.Sin(pitch);
-            cr = ExMath.Cos(roll);
-            sr = ExMath.Sin(roll);
+            /// <summary>
+            /// 3 Hz Output Rate
+            /// </summary>
+            OUTPUT_RATE_3 = 0x08,
 
-            // Below algorthing for tilt compensation taken from
-            // http://www51.honeywell.com/aero/common/documents/myaerospacecatalog-documents/Defense_Brochures-documents/Magnetic__Literature_Technical_Article-documents/Applications_of_Magnetic_Sensors_for_Low_Cost_Compass_Systems.pdf
-            // Goto http://www.magneticsensors.com choose Literature and on the "Technical Articles" select the above article
-            // results are great!
-            Xh = Xm * cp + Ym * sr * sp - Zm * cr * sp;
-            Yh = Ym * cr + Zm * sr;
-            result = ExMath.Atan(Yh / Xh);
-            if (Xh < 0)
-                result = ExMath.PI - result;
-            else if (Xh > 0)
-                if (Yh < 0)
-                    result = -result;
-                else if (Yh > 0)
-                    result = 2 * ExMath.PI - result;
-                else;
-            else // Xh == 0
-            if (Yh < 0)
-                result = ExMath.PI / 2; // 90 degrees
-            else
-                result = ExMath.PI + ExMath.PI / 2; // 270 degrees         
+            /// <summary>
+            /// 7.5 Hz Output Rate
+            /// </summary>
+            OUTPUT_RATE_7_5 = 0x0C,
 
+            /// <summary>
+            /// 15 Hz Output Rate
+            /// </summary>
+            OUTPUT_RATE_15 = 0x10,
 
-            // Add the declination value
-            result += declination;
-            return result;
+            /// <summary>
+            /// 30 Hz Output Rate
+            /// </summary>
+            OUTPUT_RATE_30 = 0x14,
+
+            /// <summary>
+            /// 75 Hz Output Rate
+            /// </summary>
+            OUTPUT_RATE_75 = 0x18
         }
 
-        public void SetContinuous()
+        private enum Gain
         {
-            //Todo fix holder below
-            //byte[] holder = new[] {CONTINUOUS_MEASUREMENT};
-            //I2CBus.GetInstance().ReadRegister(_slaveConfig, MeasurementRateRegister, holder, TransactionTimeout);
-            _bus.Write(_slaveConfig,new []{(byte)MeasurementRateRegister, (byte) CONTINUOUS_MEASUREMENT}, TransactionTimeout);
+            /// <summary>
+            /// Sensor Field Range ± 0.88 Ga (1370 LSb/Gauss)
+            /// </summary>
+            Gain1370 = 0x00,
+
+            /// <summary>
+            /// Sensor Field Range ± 1.3 Ga (1090 LSb/Gauss)
+            /// </summary>
+            Gain1090 = 0x20,
+
+            /// <summary>
+            /// Sensor Field Range ± 1.9 Ga (820 LSb/Gauss)
+            /// </summary>
+            Gain820 = 0x40,
+
+            /// <summary>
+            /// Sensor Field Range ± 2.5 Ga (660 LSb/Gauss)
+            /// </summary>
+            Gain660 = 0x60,
+
+            /// <summary>
+            /// Sensor Field Range ± 4.0 Ga (440 LSb/Gauss)
+            /// </summary>
+            GAIN_440 = 0x80,
+
+            /// <summary>
+            /// Sensor Field Range ± 4.7 Ga (390 LSb/Gauss)
+            /// </summary>
+            Gain390 = 0xA0,
+
+            /// <summary>
+            /// Sensor Field Range ± 5.6 Ga (330 LSb/Gauss)
+            /// </summary>
+            Gain330 = 0xC0,
+
+            /// <summary>
+            /// Sensor Field Range ± 8.1 Ga (230 LSb/Gauss)
+            /// </summary>
+            Gain230 = 0xE0
         }
-        
-        public void SetScale(double gauss)
+
+        private enum MeasureModes : byte
         {
-            byte regValue = 0x00;
+            /// <summary>
+            /// Normal measurement configuration (Default).
+            /// In normal measurement configuration the device follows normal measurement flow.
+            /// The positive and negative pins of the resistive load are left floating and high impedance.
+            /// </summary>
+            MeasurementModeNormal = 0x00,
 
-            if (gauss == 0.88)
-            {
-                regValue = 0x00;
-                Scale = 0.73;
-            }
-            else if (gauss == 1.3)
-            {
-                regValue = 0x01;
-                Scale = 0.92;
-            }
-            else if (gauss == 1.9)
-            {
-                regValue = 0x02;
-                Scale = 1.22;
-            }
-            else if (gauss == 2.5)
-            {
-                regValue = 0x03;
-                Scale = 1.52;
-            }
-            else if (gauss == 4.0)
-            {
-                regValue = 0x04;
-                Scale = 2.27;
-            }
-            else if (gauss == 4.7)
-            {
-                regValue = 0x05;
-                Scale = 2.56;
-            }
-            else if (gauss == 5.6)
-            {
-                regValue = 0x06;
-                Scale = 3.03;
-            }
-            else if (gauss == 8.1)
-            {
-                regValue = 0x07;
-                Scale = 4.35;
-            }
-            else
-            {
-                throw new ArgumentException("Unknown gauss value");
-            }
+            /// <summary>
+            /// Positive bias configuration for X, Y, and Z axes.
+            /// In this configuration, a positive current is forced across the resistive load for all three axes.
+            /// </summary>
+            MeasurementModePositiveBias = 0x01,
 
-            regValue = (byte) (((int) regValue) << 5);
-
-            byte[] reg = new[] {ScaleRegister};
-            //I2CBus.GetInstance().Write(_slaveConfig, reg, regValue);
-            _bus.Write(_slaveConfig, new []{(byte) ScaleRegister, (byte)regValue}, TransactionTimeout);
+            /// <summary>
+            /// Negative bias configuration for X, Y and Z axes.
+            /// In this configuration, a negative current is forced across the resistive load for all three axes.
+            /// </summary>
+            MeasurementModeNegativeBias = 0x01
         }
+
+        public enum OperatingModes : byte
+        {
+
+            /// <summary>
+            /// Continuous measurement mode
+            /// </summary>
+            OperatingModeContinuous = 0x00,
+
+            /// <summary>
+            /// Single measurement mode
+            /// </summary>
+            OperatingModeSingle = 0x01,
+
+            /// <summary>
+            /// Idle mode
+            /// </summary>
+            OperatingModeIdle = 0x02
+        }
+
+        public enum MeasurementModes
+        {
+            /// <summary>
+            /// Magnetometer is in idle mode
+            /// </summary>
+            Idle = 0,
+
+            /// <summary>
+            /// Magnetometer is in continuous mode
+            /// </summary>
+            Continuous = 1,
+
+            /// <summary>
+            /// Magnetometer is in single measument mode
+            /// </summary>
+            Single = 2
+        }
+        #endregion
+
+
+
     }
+
+    //public class Hmc5883L
+    //{
+    //    private const double declinationAngle = (8 + (12 / 60)) / (180 / Math.PI);
+    //    private const byte HMC5883L_Address = 0x1E;
+    //    private const byte ScaleRegister = 0x01;
+    //    private const byte MeasurementRateRegister = 0x02;
+    //    private const byte DataValue_StartingRegister = 0x03;
+    //    private const byte IdentificationRegister_1 = 0x0A;
+    //    private const byte IdentificationRegister_2 = 0x0B;
+    //    private const byte IdentificationRegister_3 = 0x0C;
+
+    //    private const byte IDENTIFICATION_REGISTER_A_VALUE = 0x48;
+    //    private const byte IDENTIFICATION_REGISTER_B_VALUE = 0x34;
+    //    private const byte IDENTIFICATION_REGISTER_C_VALUE = 0x33;
+    //    private const byte CONTINUOUS_MEASUREMENT = 0x00;
+
+    //    private static int CLOCK_RATE = Program.clockSpeed;
+
+    //    private double pitch, roll;
+    //    private double declination; // in milli radians
+
+    //    private I2CDevice.Configuration _slaveConfig;
+    //    private I2CBus _bus;
+    //    private const int TransactionTimeout = 1000;
+
+    //    public Hmc5883L(I2CBus bus, byte address = 0x1E, double scale = 1.3)
+    //    {
+    //        _bus = bus;
+    //        _slaveConfig = new I2CDevice.Configuration(HMC5883L_Address, CLOCK_RATE);
+    //        Thread.Sleep(100);
+    //        //_bus.Write(_slaveConfig, new[] { (byte)ScaleRegister, (byte)(((int)0x01) << 5) }, TransactionTimeout);
+    //        //SetScale(scale);
+
+    //        //SetContinuous();
+    //    }
+
+    //    public struct ThreeAxisRawData
+    //    {
+    //        public int X { get; set; }
+    //        public int Y { get; set; }
+    //        public int Z { get; set; }
+    //    }
+
+    //    public struct ThreeAxisScaledData
+    //    {
+    //        public double ScaledX { get; set; }
+    //        public double ScaledY { get; set; }
+    //        public double ScaledZ { get; set; }
+    //    }
+
+    //    public static double Scale { get; set; }
+
+    //    // If you have an EAST declination, use positive value, if you have a WEST declination, use negative value
+    //    public void SetDeclination(double dec_mRads)
+    //    {
+    //        declination = dec_mRads / 1000.0;
+    //    }
+
+    //    public void SetPitch(double p)
+    //    {
+    //        pitch = p;
+    //    }
+
+    //    public double GetPitch()
+    //    {
+    //        return pitch;
+    //    }
+
+    //    public int GetPitchDegrees()
+    //    {
+    //        return (int) ExMath.RadiansToDegrees(pitch);
+    //    }
+
+    //    public void SetRoll(double r)
+    //    {
+    //        roll = r;
+    //    }
+
+    //    public double GetRoll()
+    //    {
+    //        return roll;
+    //    }
+
+    //    public double GetRollDegrees()
+    //    {
+    //        return (int) ExMath.RadiansToDegrees(roll);
+    //    }
+
+
+    //    #region Three Axis Operations
+
+    //    public ThreeAxisRawData Raw
+    //    {
+    //        get
+    //        {
+    //            var r = new ThreeAxisRawData();
+
+    //            byte[] bytes = new byte[6];
+    //            //I2CBus.GetInstance().ReadRegister(_slaveConfig, DataValue_StartingRegister, bytes, TransactionTimeout);
+    //            _bus.ReadRegister(_slaveConfig, DataValue_StartingRegister, bytes, TransactionTimeout);
+
+    //            short xReading = (short) ((bytes[0] << 8) | bytes[1]);
+    //            short zReading = (short) ((bytes[2] << 8) | bytes[3]);
+    //            short yReading = (short) ((bytes[4] << 8) | bytes[5]);
+
+    //            r.X = xReading;
+    //            r.Y = yReading;
+    //            r.Z = zReading;
+
+    //            return r;
+    //        }
+    //    }
+
+    //    public ThreeAxisScaledData ScaledData
+    //    {
+    //        get
+    //        {
+    //            ThreeAxisRawData rd = Raw; // We will read data only once
+    //            var s = new ThreeAxisScaledData();
+
+    //            s.ScaledX = Scale * rd.X;
+    //            s.ScaledY = Scale * rd.Y;
+    //            s.ScaledZ = Scale * rd.Z;
+
+    //            return s;
+    //        }
+    //    }
+
+    //    #endregion
+
+    //    public double GetHeadingRaw()
+    //    {
+    //        ThreeAxisScaledData sd = this.ScaledData; // this ensures we are reading data only once from the bus
+
+    //        return ExMath.Atan(sd.ScaledY / sd.ScaledX);
+    //    }
+
+    //    public double GetHeadingRawDegrees()
+    //    {
+    //        return ExMath.RadiansToDegrees(this.GetHeadingRaw());
+    //    }
+
+    //    public double GetHeadingDegrees()
+    //    {
+    //        return ExMath.RadiansToDegrees(this.GetHeading());
+    //    }
+
+    //    public double GetHeading()
+    //    {
+    //        ThreeAxisScaledData sd;
+    //        double Xm, Ym, Zm;
+    //        double Xh, Yh;
+    //        double cp, sp, cr, sr; // Cos and Sin of Pitch and Roll
+    //        double result;
+
+    //        sd = this.ScaledData; // this ensures we are only reading once from the bus
+    //        Xm = sd.ScaledX; // swapping X=Y due to installment 
+    //        Ym = sd.ScaledY;
+    //        Zm = sd.ScaledZ;
+
+    //        cp = ExMath.Cos(pitch);
+    //        sp = ExMath.Sin(pitch);
+    //        cr = ExMath.Cos(roll);
+    //        sr = ExMath.Sin(roll);
+
+    //        // Below algorthing for tilt compensation taken from
+    //        // http://www51.honeywell.com/aero/common/documents/myaerospacecatalog-documents/Defense_Brochures-documents/Magnetic__Literature_Technical_Article-documents/Applications_of_Magnetic_Sensors_for_Low_Cost_Compass_Systems.pdf
+    //        // Goto http://www.magneticsensors.com choose Literature and on the "Technical Articles" select the above article
+    //        // results are great!
+    //        Xh = Xm * cp + Ym * sr * sp - Zm * cr * sp;
+    //        Yh = Ym * cr + Zm * sr;
+    //        result = ExMath.Atan(Yh / Xh);
+    //        if (Xh < 0)
+    //            result = ExMath.PI - result;
+    //        else if (Xh > 0)
+    //            if (Yh < 0)
+    //                result = -result;
+    //            else if (Yh > 0)
+    //                result = 2 * ExMath.PI - result;
+    //            else;
+    //        else // Xh == 0
+    //        if (Yh < 0)
+    //            result = ExMath.PI / 2; // 90 degrees
+    //        else
+    //            result = ExMath.PI + ExMath.PI / 2; // 270 degrees         
+
+
+    //        // Add the declination value
+    //        result += declination;
+    //        return result;
+    //    }
+
+    //    public void SetContinuous()
+    //    {
+    //        //Todo fix holder below
+    //        //byte[] holder = new[] {CONTINUOUS_MEASUREMENT};
+    //        //I2CBus.GetInstance().ReadRegister(_slaveConfig, MeasurementRateRegister, holder, TransactionTimeout);
+    //        _bus.Write(_slaveConfig,new []{(byte)MeasurementRateRegister, (byte) CONTINUOUS_MEASUREMENT}, TransactionTimeout);
+    //    }
+
+    //    public void SetScale(double gauss)
+    //    {
+    //        byte regValue = 0x00;
+
+    //        if (gauss == 0.88)
+    //        {
+    //            regValue = 0x00;
+    //            Scale = 0.73;
+    //        }
+    //        else if (gauss == 1.3)
+    //        {
+    //            regValue = 0x01;
+    //            Scale = 0.92;
+    //        }
+    //        else if (gauss == 1.9)
+    //        {
+    //            regValue = 0x02;
+    //            Scale = 1.22;
+    //        }
+    //        else if (gauss == 2.5)
+    //        {
+    //            regValue = 0x03;
+    //            Scale = 1.52;
+    //        }
+    //        else if (gauss == 4.0)
+    //        {
+    //            regValue = 0x04;
+    //            Scale = 2.27;
+    //        }
+    //        else if (gauss == 4.7)
+    //        {
+    //            regValue = 0x05;
+    //            Scale = 2.56;
+    //        }
+    //        else if (gauss == 5.6)
+    //        {
+    //            regValue = 0x06;
+    //            Scale = 3.03;
+    //        }
+    //        else if (gauss == 8.1)
+    //        {
+    //            regValue = 0x07;
+    //            Scale = 4.35;
+    //        }
+    //        else
+    //        {
+    //            throw new ArgumentException("Unknown gauss value");
+    //        }
+
+    //        regValue = (byte) (((int) regValue) << 5);
+
+    //        byte[] reg = new[] {ScaleRegister};
+    //        //I2CBus.GetInstance().Write(_slaveConfig, reg, regValue);
+    //        _bus.Write(_slaveConfig, new []{(byte) ScaleRegister, (byte)regValue}, TransactionTimeout);
+    //        //_bus.WriteRegister(_slaveConfig, ScaleRegister, regValue, TransactionTimeout);
+    //    }
+    //}
 }
 
 //Bug: This is the old implementation that didn't work properly. Save for reference

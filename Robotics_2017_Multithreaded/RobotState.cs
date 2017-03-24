@@ -30,8 +30,8 @@ namespace Robotics_2017.Work_Items {
             LastcompassHeading = double.MaxValue;
             RawCompassHeading = double.MaxValue;
             LastRawCompassHeading = double.MaxValue;
-            Bearing = int.MaxValue;
-            LastBearing = int.MaxValue;
+            Bearing = -1;
+            LastBearing = -1;
             BeaconPresent = false;
             LastBeaconPresent = false;
         }

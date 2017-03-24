@@ -19,7 +19,6 @@ namespace Robotics_2017 {
         public const int clockSpeed = 100;
 
         public static void Main() {
-            I2CBus bus = new I2CBus();
             //Post methods
             //THIS SECTION CREATES / INITIALIZES THE SERIAL LOGGER
             Debug.Print("Flight computer posted successfully. Beginning INIT.");
@@ -39,11 +38,11 @@ namespace Robotics_2017 {
             
             var motors = new MotorDriver();
 
-            var testCompass = new CompassUpdater(bus);
+            var testCompass = new CompassUpdater();
             testCompass.Start();
 
-            var testBeacon = new ReceiverUpdater(bus);
-            testBeacon.Start();
+            //var testBeacon = new ReceiverUpdater(bus);
+            //testBeacon.Start();
 
             //var testPing = new PingUpdater(Pins.GPIO_PIN_A0);
             //testPing.Start();
@@ -59,7 +58,8 @@ namespace Robotics_2017 {
 
             while (true)
             {
-                Debug.Print("Degrees: "+ RobotState.CompassHeading);
+                //Debug.Print("Degrees: "+ RobotState.CompassHeading);
+                //Debug.Print("Beacon: "+ RobotState.Bearing);
                 Thread.Sleep(500);
 
                 //Debug.Print("IR: " + RobotState.IRDistance);
