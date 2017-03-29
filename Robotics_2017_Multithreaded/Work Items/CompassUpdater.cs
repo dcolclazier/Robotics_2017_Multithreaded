@@ -4,17 +4,17 @@ using Robotics_2017.Work_Items;
 
 namespace Robotics_2017.Utility {
     public class CompassUpdater {
-        private readonly Hmc5883L _compass;
+        private Hmc5883L _compass;
 
         private readonly WorkItem _workItem;
         private readonly int _delay;
 
-        I2CBus bus = new I2CBus();
+        //I2CBus bus = new I2CBus();
 
         //Maximum refresh rate from the HMC3883L is 14ms in continuous measurement mode
         public CompassUpdater(int delay = 100)
         {
-            _compass = new Hmc5883L(bus);
+            _compass = new Hmc5883L();
             _workItem = new WorkItem(CompassUpdate, false, true, true);
             _delay = delay;
         }

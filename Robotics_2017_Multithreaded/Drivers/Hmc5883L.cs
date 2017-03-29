@@ -10,77 +10,111 @@ namespace Robotics_2017.Drivers
 {
     public class Hmc5883L
     {
-        private static int CLOCK_RATE = Program.clockSpeed;
+        private int CLOCK_RATE = Program.clockSpeed;
 
-        private I2CDevice.Configuration _slaveConfig;
-        //private I2CDevice.Configuration _slaveWriteConfig;
-        //private I2CDevice.Configuration _slaveReadConfig;
-        private I2CBus _bus;
-        public const int TransactionTimeout = 1000;
+        private static I2CDevice.Configuration _slaveConfig;
+        
+        public const int TransactionTimeout = 10;
 
         private Data _magData;
 
-        public Hmc5883L(I2CBus bus, byte address = 0x1E, double scale = 1.3)
-        {
-            _bus = bus;
+        private static byte address => 0x1E;
 
-            _slaveConfig = new I2CDevice.Configuration((byte)Addresses.WRITE_ADDRESS >> 1, CLOCK_RATE);
+        public Hmc5883L()
+        {
+
+            _slaveConfig = new I2CDevice.Configuration(address, 100);
+
+
             //_slaveWriteConfig = new I2CDevice.Configuration((byte) Addresses.WRITE_ADDRESS, CLOCK_RATE);
             //_slaveReadConfig = new I2CDevice.Configuration((byte) Addresses.READ_ADDRESS, CLOCK_RATE);
 
             //_bus.Write(_slaveConfig, new[] {(byte) Addresses.WRITE_ADDRESS, (byte) Registers.ConfigurationRegisterA, (byte) SamplesAveraged.SamplesAveraged8}, TransactionTimeout);
 
-            //_bus.Write(_slaveConfig, new[] {(byte) 0X3C, (byte)0x00, (byte)0x70 }, TransactionTimeout);
+            //I2CBus.GetInstance().Write(_slaveConfig,new []{ (byte)Registers.ConfigurationRegisterA, (byte)SamplesAveraged.SamplesAveraged8 }, TransactionTimeout);
 
-            _bus.WriteRegister(_slaveConfig, 0x00, 0x70, TransactionTimeout);
+
+            I2CBus.GetInstance().Write(_slaveConfig, new[] { (byte)0x3C, (byte)0x00, (byte)0x70 }, TransactionTimeout);
+
+            //I2CBus.GetInstance().Read(_slaveConfig, buffer, TransactionTimeout);
 
             //_bus.WriteRegister(_slaveConfig, (byte)Registers.ConfigurationRegisterA, (byte)SamplesAveraged.SamplesAveraged8, TransactionTimeout);
             //_bus.Write(_slaveConfig, new []{(byte)Addresses.WRITE_ADDRESS, (byte) Registers.ConfigurationRegisterA, (byte) SamplesAveraged.SamplesAveraged8}, TransactionTimeout);
             //_bus.WriteRegister(_slaveConfig, (byte)Registers.ConfigurationRegisterA, (byte)SamplesAveraged.SamplesAveraged8, TransactionTimeout);
-            //Thread.Sleep(50);
+            Thread.Sleep(50);
 
+            I2CBus.GetInstance().WriteRegister(_slaveConfig, (byte)Registers.ConfigurationRegisterB, (byte)Gain.Gain1090, TransactionTimeout);
             //_bus.WriteRegister(_slaveConfig, (byte)Addresses.WRITE_ADDRESS, new[] { (byte)Registers.ConfigurationRegisterB, (byte)Gain.Gain1090}, TransactionTimeout);
             //_bus.Write(_slaveConfig, new[] { (byte)Addresses.WRITE_ADDRESS, (byte)Registers.ConfigurationRegisterB, (byte)Gain.Gain1090 }, TransactionTimeout);
-            //Thread.Sleep(50);
+            Thread.Sleep(50);
 
-            _bus.Write(_slaveConfig, new []{((byte) (0x1E & 0x3C))}, TransactionTimeout);
+
+
+            //_bus.Write(_slaveConfig, new []{((byte) (0x1E & 0x3C))}, TransactionTimeout);
+
             //_bus.WriteRegister(_slaveConfig, (byte)Addresses.WRITE_ADDRESS, new[] { (byte)Registers.ModeRegister, (byte)OperatingModes.OperatingModeContinuous}, TransactionTimeout);
             //_bus.Write(_slaveConfig, new byte[] { (byte)Addresses.WRITE_ADDRESS, (byte)Registers.ModeRegister, (byte)OperatingModes.OperatingModeContinuous }, TransactionTimeout);
-            Thread.Sleep(6);
 
+            I2CBus.GetInstance().WriteRegister(_slaveConfig, (byte)Registers.ModeRegister,(byte)OperatingModes.OperatingModeContinuous,TransactionTimeout);
 
-
-        }
-
-
-        public short ReadHeading()
-        {
-            //var readBuffer = new byte[6];
-            //var data = new Data();
-            //I2CBus.GetInstance().ReadRegister(_slaveConfig, 0x03, readBuffer, TransactionTimeout);
-
-            //I2CBus.GetInstance().Read(_slaveConfig, readBuffer, TransactionTimeout);
-            //data.AxisX = (readBuffer[0] << 8) | readBuffer[1];
-            //data.AxisZ = (readBuffer[2] << 8) | readBuffer[3];
-            //data.AxisY = (readBuffer[4] << 8) | readBuffer[5];
+            Thread.Sleep(100);
 
             Data data = new Data();
             var buffer = new byte[6];
             buffer[0] = 0x03;
-            //I2CBus.GetInstance().Write(_slaveConfig, new byte[] { 0x3D, 0x06 }, TransactionTimeout);
+            I2CBus.GetInstance().Write(_slaveConfig, new byte[] { 0x3D, 0x06 }, TransactionTimeout);
 
-            //I2CBus.GetInstance().Read(new I2CDevice.Configuration(0x1E, 100), buffer, TransactionTimeout);
-            //I2CBus.GetInstance().Write(_slaveConfig, new byte[] {0x3C, 0x03 }, TransactionTimeout);
-            _bus.ReadRegister(_slaveConfig, 0x03, buffer, TransactionTimeout);
+            I2CBus.GetInstance().ReadRegister(_slaveConfig, 0x03, buffer, TransactionTimeout);
 
-            _bus.Write(_slaveConfig, new byte[] { 0x3C, 0x03 }, TransactionTimeout);
+            I2CBus.GetInstance().Write(_slaveConfig, new byte[] { 0x3C, 0x03 }, TransactionTimeout);
 
             data.AxisX = ((buffer[0] << 8) | buffer[1]);
             data.AxisZ = ((buffer[2] << 8) | buffer[3]);
             data.AxisY = ((buffer[4] << 8) | buffer[5]);
 
             Debug.Print("x: " + data.AxisX + " Y: " + data.AxisY + " Z: " + data.AxisZ);
-            return 1234;
+        }
+
+
+        public short ReadHeading()
+        {
+            Data data = new Data();
+            var buffer = new byte[6];
+            buffer[0] = 0x03;
+
+            double heading = 0;
+
+            I2CBus.GetInstance().Write(_slaveConfig, new byte[] { 0x3D, 0x06 }, TransactionTimeout);
+
+            I2CBus.GetInstance().ReadRegister(_slaveConfig, 0x03, buffer, TransactionTimeout);
+
+            I2CBus.GetInstance().Write(_slaveConfig, new byte[] { 0x3C, 0x03 }, TransactionTimeout);
+
+            data.AxisX = ((buffer[0] << 8) | buffer[1]);
+            data.AxisZ = ((buffer[2] << 8) | buffer[3]);
+            data.AxisY = ((buffer[4] << 8) | buffer[5]);
+
+            //Debug.Print("x: " + data.AxisX + " Y: " + data.AxisY + " Z: " + data.AxisZ);
+
+            heading = Math.Atan2(data.AxisY, data.AxisX);
+            var declinationAngle = (4.0 + (26.0 / 60.0)) / (180 / Math.PI);
+            heading += declinationAngle;
+
+            // Correct for heading < 0deg and heading > 360deg
+            if (heading < 0)
+            {
+                heading += 2 * Math.PI;
+            }
+
+            if (heading > 2 * Math.PI)
+            {
+                heading -= 2 * Math.PI;
+            }
+
+            // Convert to degrees
+            var headingDegrees = heading * 180 / Math.PI;
+
+            return (short)headingDegrees;
         }
 
 
@@ -102,7 +136,7 @@ namespace Robotics_2017.Drivers
         /// <summary>
         /// Class for the I²C connection
         /// </summary>
-        private I2CDevice _i2CDevice;
+        //private I2CDevice _i2CDevice;
 
         /// <summary>
         /// The variables for storing the results after the measurement.

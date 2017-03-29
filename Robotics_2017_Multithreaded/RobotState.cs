@@ -1,7 +1,7 @@
 using Microsoft.SPOT.Hardware;
 using SecretLabs.NETMF.Hardware.Netduino;
 
-namespace Robotics_2017.Work_Items {
+namespace Robotics_2017 {
 
     public static class RobotState {
 

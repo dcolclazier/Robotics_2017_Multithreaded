@@ -58,9 +58,9 @@ namespace Robotics_2017 {
 
             while (true)
             {
-                //Debug.Print("Degrees: "+ RobotState.CompassHeading);
+                Debug.Print("Degrees: "+ RobotState.CompassHeading);
                 //Debug.Print("Beacon: "+ RobotState.Bearing);
-                Thread.Sleep(500);
+                Thread.Sleep(100);
 
                 //Debug.Print("IR: " + RobotState.IRDistance);
                 //Debug.Print("\nPing: " + RobotState.PingDistance);

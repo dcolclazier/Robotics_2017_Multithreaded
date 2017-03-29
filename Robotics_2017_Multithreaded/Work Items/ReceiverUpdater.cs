@@ -17,7 +17,7 @@ namespace Robotics_2017.Work_Items
         //public ReceiverUpdater(I2CBus bus, int delay = 500)
         public ReceiverUpdater(int delay = 500)
         {
-            //_receiver = new Receiver(bus);
+            //_receiver = new Receiver();
             //_workItem = new WorkItem(ReceiverUpdate, false, true, true);
             //_workItem2 = new WorkItem(Health, false, true, true);
 
@@ -33,7 +33,7 @@ namespace Robotics_2017.Work_Items
 
         private void Health()
         {
-            RobotState.SetBeaconHealth(_receiver.BeaconPresent());
+            //RobotState.SetBeaconHealth(_receiver.BeaconPresent());
             Thread.Sleep(_delay);
         }
 
