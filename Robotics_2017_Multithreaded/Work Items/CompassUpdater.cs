@@ -9,17 +9,17 @@ namespace Robotics_2017.Utility {
         private readonly WorkItem _workItem;
         private readonly int _delay;
 
-        //I2CBus bus = new I2CBus();
-
         //Maximum refresh rate from the HMC3883L is 14ms in continuous measurement mode
         public CompassUpdater(int delay = 100)
         {
             _compass = new Hmc5883L();
             _workItem = new WorkItem(CompassUpdate, false, true, true);
             _delay = delay;
+            
         }
 
         private void CompassUpdate() {
+            if (_compass._initialized == false) _workItem.Stop();//kills CompassUpdater if failure is detected
             //RobotState.SetRawHeading(_compass.readRaw());
             RobotState.SetHeading(_compass.ReadHeading());
             //RobotState.SetHeading(_compass.GetHeadingDegrees());

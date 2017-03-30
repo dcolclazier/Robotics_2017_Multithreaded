@@ -15,9 +15,6 @@ namespace Robotics_2017 {
     
     public static class Program
     {
-        
-        public const int clockSpeed = 100;
-
         public static void Main() {
             //Post methods
             //THIS SECTION CREATES / INITIALIZES THE SERIAL LOGGER
@@ -40,6 +37,8 @@ namespace Robotics_2017 {
 
             var testCompass = new CompassUpdater();
             testCompass.Start();
+            
+            OutputPort ledOnboard = new OutputPort(Pins.ONBOARD_LED, false);
 
             //var testBeacon = new ReceiverUpdater(bus);
             //testBeacon.Start();
@@ -58,9 +57,9 @@ namespace Robotics_2017 {
 
             while (true)
             {
-                Debug.Print("Degrees: "+ RobotState.CompassHeading);
+                
                 //Debug.Print("Beacon: "+ RobotState.Bearing);
-                Thread.Sleep(100);
+                
 
                 //Debug.Print("IR: " + RobotState.IRDistance);
                 //Debug.Print("\nPing: " + RobotState.PingDistance);
