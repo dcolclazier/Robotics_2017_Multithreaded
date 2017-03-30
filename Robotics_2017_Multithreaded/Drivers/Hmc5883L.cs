@@ -40,30 +40,41 @@ namespace Robotics_2017.Drivers
 
         private bool Init()
         {
+            int tries = 0;
             byte[] bufferA = new byte[1];
-            try { I2CBus.GetInstance().ReadRegister(_slaveConfig, (byte) Registers.IdentificationRegisterA, bufferA, TransactionTimeout);}
-            catch { Debug.Print("Failed to read ID:A Register..."); throw new IOException(); }
-            byte[] bufferB = new byte[1];
-            try { I2CBus.GetInstance().ReadRegister(_slaveConfig, (byte)Registers.IdentificationRegisterB, bufferB, TransactionTimeout);}
-            catch { Debug.Print("Failed to read ID:B Register..."); throw new IOException(); }
-            byte[] bufferC = new byte[1];
-            try { I2CBus.GetInstance().ReadRegister(_slaveConfig, (byte)Registers.IdentificationRegisterC, bufferC, TransactionTimeout);}
-            catch { Debug.Print("Failed to read ID:C Register..."); throw new IOException(); }
+            ReadA:
+            //try { I2CBus.GetInstance().ReadRegister(_slaveConfig, (byte) Registers.IdentificationRegisterA, bufferA, TransactionTimeout);}
+            try { I2CBus.GetInstance().ReadRegister(_slaveConfig, (byte) 0x0A, bufferA, TransactionTimeout);}
+            catch { Debug.Print("Failed to read ID:A Register... Retrying...");  tries++; if (tries < 5) goto ReadA; if(tries >=5) throw new IOException(); }
 
-            if(bufferA[0]!=0X48||bufferB[0]!=0x34||bufferC[0]!=0x33) throw new ArgumentException("HMC5883L returned invalid ID values");
+            tries = 0;
+            byte[] bufferB = new byte[1];
+            ReadB:
+            //try { I2CBus.GetInstance().ReadRegister(_slaveConfig, (byte)Registers.IdentificationRegisterB, bufferB, TransactionTimeout);}
+            try { I2CBus.GetInstance().ReadRegister(_slaveConfig, (byte) 0x0B, bufferB, TransactionTimeout);}
+            catch { Debug.Print("Failed to read ID:B Register... Retrying..."); tries++; if (tries < 5) goto ReadB; if (tries >= 5) throw new IOException(); }
+
+            tries = 0;
+            byte[] bufferC = new byte[1];
+            ReadC:
+            //try { I2CBus.GetInstance().ReadRegister(_slaveConfig, (byte)Registers.IdentificationRegisterC, bufferC, TransactionTimeout);}
+            try { I2CBus.GetInstance().ReadRegister(_slaveConfig, (byte) 0x0C, bufferC, TransactionTimeout);}
+            catch { Debug.Print("Failed to read ID:C Register... Retrying..."); tries++; if (tries < 5) goto ReadC; if (tries >= 5) throw new IOException(); }
+
+            if(bufferA[0]!=0X48||bufferB[0]!=0x34||bufferC[0]!=0x33) throw new ArgumentException("HMC5883L returned unexpected ID values.");
 
             //I2CBus.GetInstance().Write(_slaveConfig,new []{ (byte)Registers.ConfigurationRegisterA, (byte)SamplesAveraged.SamplesAveraged8 }, TransactionTimeout);
-            try{I2CBus.GetInstance().Write(_slaveConfig, new[] {(byte) 0x3C, (byte) 0x00, (byte) 0x70}, TransactionTimeout);}
-            catch{Debug.Print("Could not write to Config:A Register..."); throw new IOException(); }
+            try { I2CBus.GetInstance().Write(_slaveConfig, new[] { (byte)0x00, (byte)0x70 }, TransactionTimeout); }
+            catch { Debug.Print("Could not write to Config:A Register..."); throw new IOException(); }
             Thread.Sleep(10);
 
             //I2CBus.GetInstance().WriteRegister(_slaveConfig, (byte)Registers.ConfigurationRegisterB, (byte)Gain.Gain1090, TransactionTimeout);
-            try { I2CBus.GetInstance().Write(_slaveConfig, new[] { (byte)0x3C, (byte)0x01, (byte)0x20 }, TransactionTimeout);}
+            try { I2CBus.GetInstance().Write(_slaveConfig, new[] { (byte)0x01, (byte)0xA0 }, TransactionTimeout); }
             catch { Debug.Print("Could not write to Config:B Register..."); throw new IOException(); }
             Thread.Sleep(10);
 
             //I2CBus.GetInstance().WriteRegister(_slaveConfig, (byte)Registers.ModeRegister,(byte)OperatingModes.OperatingModeContinuous,TransactionTimeout);
-            try { I2CBus.GetInstance().Write(_slaveConfig, new[] { (byte)0x3C, (byte)0x02, (byte)0x00 }, TransactionTimeout);}
+            try { I2CBus.GetInstance().Write(_slaveConfig, new[] { (byte)0x02, (byte)0x00 }, TransactionTimeout); }
             catch { Debug.Print("Could not write to Config:C Register..."); throw new IOException(); }
 
             _magData.declinationAngle = (4.0 + (26.0 / 60.0)) / (180 / Math.PI);
@@ -73,39 +84,40 @@ namespace Robotics_2017.Drivers
 
         public short ReadHeading()
         {
+            byte[] buffer = new byte[6];
             double heading = 0;
 
-            try { I2CBus.GetInstance().Write(_slaveConfig, new byte[] { 0x3D, 0x06 }, TransactionTimeout);}
+            try { I2CBus.GetInstance().Write(_slaveConfig, new byte[] { 0x06 }, TransactionTimeout);}
             catch { Debug.Print("Failed to request data from HMC5883L..."); return -1;}
 
-            try { I2CBus.GetInstance().ReadRegister(_slaveConfig, 0x03, _i2CData, TransactionTimeout);}
+            try { I2CBus.GetInstance().ReadRegister(_slaveConfig, 0x03, buffer, TransactionTimeout);}
             catch { Debug.Print("Failed to read data from HMC5883L..."); return -1; }
 
-            try { I2CBus.GetInstance().Write(_slaveConfig, new byte[] { 0x3C, 0x03 }, TransactionTimeout);}
+            try { I2CBus.GetInstance().Write(_slaveConfig, new byte[] { 0x03 }, TransactionTimeout);}
             catch { Debug.Print("Failed to point back to data register on HMC5883L..."); return -1; }
 
-            _magData.AxisX = ((_i2CData[0] << 8) | _i2CData[1]);
-            _magData.AxisZ = ((_i2CData[2] << 8) | _i2CData[3]);
-            _magData.AxisY = ((_i2CData[4] << 8) | _i2CData[5]);
+            _magData.AxisX = (double)((buffer[0] << 8) | buffer[1])* _mgPerDigit;
+            _magData.AxisZ = (double)((buffer[2] << 8) | buffer[3])* _mgPerDigit;
+            _magData.AxisY = (double)((buffer[4] << 8) | buffer[5])* _mgPerDigit;
 
             try { heading = Math.Atan2(_magData.AxisY, _magData.AxisX);}
             catch { Debug.Print("Bad data detected. Ignoring reading..."); return -1;}
             heading += _magData.declinationAngle;
 
             // Correct for heading < 0deg and heading > 360deg
-            try
-            {
-                if (heading < 0)
-                {
-                    heading += 2 * Math.PI;
-                }
+            //try
+            //{
+            //    if (heading < 0)
+            //    {
+            //        heading += (2 * Math.PI);
+            //    }
 
-                if (heading > 2 * Math.PI)
-                {
-                    heading -= 2 * Math.PI;
-                }
-            }
-            catch { Debug.Print("Bad data detected. Ignoring reading..."); return -1; }
+            //    if (heading > (2 * Math.PI))
+            //    {
+            //        heading -= (2 * Math.PI);
+            //    }
+            //}
+            //catch { Debug.Print("Bad data detected. Ignoring reading..."); return -1; }
 
             // Convert to degrees
             var headingDegrees = heading * 180 / Math.PI;
@@ -124,7 +136,7 @@ namespace Robotics_2017.Drivers
         /// <summary>
         /// Modifier
         /// </summary>
-        private float _mgPerDigit = 0.92f;
+        private float _mgPerDigit => 0.92f;
 
         /// <summary>
         /// The variables for storing the results after the measurement.

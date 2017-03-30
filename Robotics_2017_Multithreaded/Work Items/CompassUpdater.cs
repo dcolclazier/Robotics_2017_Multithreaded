@@ -19,7 +19,7 @@ namespace Robotics_2017.Utility {
         }
 
         private void CompassUpdate() {
-            if (_compass._initialized == false) _workItem.Stop();//kills CompassUpdater if failure is detected
+            //if (_compass._initialized == false) { _workItem.Stop(); return;}//kills CompassUpdater if failure is detected
             //RobotState.SetRawHeading(_compass.readRaw());
             RobotState.SetHeading(_compass.ReadHeading());
             //RobotState.SetHeading(_compass.GetHeadingDegrees());
